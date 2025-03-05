@@ -1,1 +1,54 @@
-Hello World
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+
+<title>Zip Decode</title>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="queue.min.js"></script>
+
+<style type="text/css">
+/* HTML styling */
+html { background-color: #333333 }
+body {
+    font-family: Helvetica, Arial, sans-serif; font-size: 16px;
+    color: #cbcbcb;
+}
+a { text-decoration: none; color: #999a63 }
+#map { width: 1200px; height: 600px; }
+
+/* SVG styling */
+svg { background-color: #333333 }
+text { fill: #cbcbcb; font-size: 24px; }
+#states { fill: none; stroke: #555555; stroke-width: 0.5px; }
+rect {
+    transition: fill 0.4s;
+    -webkit-transition: fill 0.4s;
+    -o-transition: fill 0.4s;
+}
+.selected { fill: #cbcbcb }
+.unselected { fill: #999a63 }
+</style>
+
+</head><body>
+
+<!-- Static HTML defining the page -->
+<center>
+<div id="map"></div>
+<p style="padding-top: 50px; font-size: 120%">
+    Please type a zip code
+</p>
+
+<p>A reimplementation of
+    <a href="http://benfry.com/">Ben Fry</a>'s
+    <a href="http://benfry.com/zipdecode/">zipdecode (2004)</a><br>
+    In Javascript with <a href="http://d3js.org/">D3</a>
+    by <a href="http://www.somebits.com/weblog/">Nelson Minar</a>
+</p>
+</center>
+
+<a href="https://github.com/NelsonMinar/zipdecode-js"><img
+      style="position:absolute;top:0;right:0;border:0;"
+      width="149" height="149" src="forkme.png" alt="Fork me on GitHub"
+      /></a>
+</body></html>
