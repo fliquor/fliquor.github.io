@@ -1,41 +1,60 @@
-var width = 1200, height = 600;
-var instructions = "";
+var margin = {top : 0, left : 0, right : 0, bottom : 0};
+height = 400 - margin.top - margin.bottom;
+width = 800 - margin.left - margin.right;
 
-// Display: geographic projection
-var proj = d3.geo.albersUsa().scale(1200)
-    .translate([width / 2, height / 2]);
-var path = d3.geo.path().projection(proj);
+// define map parametrs
+var svg = d3.select("#vis")
+    .append('svg')
+    .attr("height", height + margin.top + margin.bottom)
+    .attr("width", width + margin.left + margin.right)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.right + ")")
 
-// Interaction: stored state
-var selectedZip = "";
+// read in us json data
 
-// Display: AJAX load the data files, then call render()
-queue()
-    .defer(d3.json, "us-states.geojson")
-    .defer(d3.tsv, "zips.tsv")
-    .await(render);
+async function chart() {
+    const [data] = await Promise.all([
+      d3.json('data/us.json')
+    ])
+    ready(data)
+}
 
-// Display: create the SVG, draw the map
-function render(error, states, zips) {
-    // Display: the main SVG container
-    var svg = d3.select("#map").append("svg")
-        .attr("width", width)
-        .attr("height", height);
+// use US projection
+var projection = d3.geoAlbersUsa()
+    .translate([width / 2, height / 2])
+    .scale(850)
 
-    // Interaction: text box displaying the selection
-    svg.append("text").attr("id", "selected")
-        .text(instructions)
-        .attr("x", 20).attr("y", 50);
+var path = d3.geoPath()
+    .projection(projection)
 
-    // Display: state outlines
-    svg.append("g").attr("id", "states");
-    d3.select("#states").selectAll("path")
-        .data(states.features)
-      .enter().append("path")
-        .attr("d", path);
 
-    var start = Date.now();
+// function to run
+function ready(data) {
 
-    console.log("Draw dots: " + (Date.now() - start) + "ms");
+    console.log(data)
 
-};
+    var states = topojson.feature(data, data.objects.default).features
+    console.log(states[0].properties["postal-code"])
+
+    // add state data to the plot
+    svg.selectAll(".states")
+       .data(states)
+       .enter().append("path")
+       .attr("class", "state")
+       .style("fill", "blue")
+       .attr("d", path)
+
+    // text labels for each state
+    svg.selectAll("g.countryLabels text")
+    .data(states)
+    .join("text")
+      .attr("fill", d => d.properties['region'] == 'Northeast' ? "black" : "white")
+      .attr("transform", d => `translate(${path.centroid(d)})`)
+      .attr("dx", d => d.properties['region'] == 'Northeast' ? 75 : 0)
+      .attr("dy", "0em")
+      .attr("text-anchor", "middle")
+      .style("font", "400 12px/1.5 'Source Sans Pro', 'Noto Sans', sans-serif")
+      .text(d => d.properties["postal-code"]);
+}
+
+chart()
