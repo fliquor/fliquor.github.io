@@ -15,7 +15,10 @@ let mapData, weatherData, states
 let colorScale
 const options = ["TAVG", "SNOW", "PRCP", "WND"]
 const labelNames = ["Average Temperature (F)", "Snowfall (in)", "Percipitation (in)", "Wind Speed (mph)"]
+const exclude = ["VT", "NH", "MA", "RI", "CT", "NJ", "MD", "DE", "DC"]
 const f = d3.format(".2f")
+const t = 1000 // 1000 ms
+
 // use US projection
 var projection = d3.geoAlbersUsa()
     .translate([(width / 2.5) - 75, (height / 2.5) + 60])
@@ -28,18 +31,7 @@ var path = d3.geoPath()
 async function init() {
     // define map and weather data
     mapData = await d3.json('data/us.json')
-    weatherData = await d3.csv('data/weather.csv', d => ({
-                state: d.state,
-                latitude: +d.latitude,
-                longitude: +d.longitude,
-                elevation: +d.elevation,
-                // seperates the date string into a numerica array with [YYYY, MM, DD]
-                date: [+d.date.substring(0, 4), +d.date.substring(4, 6), +d.date.substring(6)],
-                TAVG: (+d.TMAX + +d.TMIN) / 2,
-                SNOW: +d.SNOW,
-                PRCP: +d.PRCP,
-                WND: +d.AWND
-            }))
+    weatherData = await d3.json('data/weatherModified.json')
     
     states = topojson.feature(mapData, mapData.objects.default).features
     colorScale = updateColorScale(colorVar)
@@ -53,13 +45,15 @@ async function init() {
 function setupSelector() { // set up season buttons and weather data dropdown
    
     d3.select("#Winter") // on button click change the season and update the chart
-        .on('click', function(){season = "Winter"; updateVis()});
+        .on('click', function(){
+            season = "Winter"; d3.select("strong").text("Selected: Winter"); updateVis()});
     d3.select("#Spring")
-        .on('click', function(){season = "Spring", updateVis()});
+        .on('click', function(){
+            season = "Spring"; d3.select("strong").text("Selected: Spring"); updateVis()});
     d3.select("#Summer")
-        .on('click', function(){season = "Summer", updateVis()});
+        .on('click', function(){season = "Summer"; d3.select("strong").text("Selected: Summer"); updateVis()});
     d3.select("#Fall")
-        .on('click', function(){season = "Fall", updateVis()});
+        .on('click', function(){season = "Fall"; d3.select("strong").text("Selected: Fall"); updateVis()});
 
     // dropdown setup
     d3.selectAll('.variable')
@@ -93,7 +87,7 @@ function setupSelector() { // set up season buttons and weather data dropdown
 
 // function to update the map plot
 function updateVis() {
-    console.log(states)
+    let xPos, yPos // positions for the tooltips
     // add state data to the plot
     svg.selectAll(".states")
        .data(states)
@@ -102,35 +96,26 @@ function updateVis() {
                 return enter.append("path")
                 .attr("class", "state")
                 .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
-                .style("fill", d => colorScale(d3.mean(weatherData.filter(item => (item.state == d.properties['postal-code']) && 
-                                            (within_season(item.date[1], season))).map(item => item[colorVar])))) // filter for correct data types and seasons
+                .style("fill", "white") // starting color
                 .attr("d", path)
                 // bring up tool tips
                 .on('mouseover', function (event, d) {
-                    console.log(d) // See the data point in the console for debugging
+                    xPos = event.pageX + 20, yPos = event.pageY - 28
                     d3.select('#tooltip')
                     // styling the tooltip (shape, color)
                     .style("display", 'block') 
-                    .style("background-color", "white")
-                    .style("border-radius", "10px")
-                    .style("box-shadow", "4px 4px 10px rgba(0, 0, 0, 0.4)")
                     .html( // Change the html content of the <div> directly
                     `<strong>${d.properties.name}</strong><br/>
-                    Stations: ${weatherData.filter(item => (item.state == d.properties['postal-code'])).length}<br/>
-                    ${labelNames[options.indexOf(colorVar)]}: ${f(d3.mean(weatherData.filter(item => (item.state == d.properties['postal-code']) && 
-                                                                (within_season(item.date[1], season))).map(item => item[colorVar])))}`)
-                    // style text + location of the tooltip
-                    .style("font", "400 12px/1.5 'Source Sans Pro', 'Noto Sans', sans-serif")
-                    .style("padding-left", "5px")
-                    .style("padding-right", "5px")
-                    .style("left", (event.pageX + 20) + "px")
-                    .style("top", (event.pageY - 28) + "px")
+                    Stations: ${weatherData[states.indexOf(d)].stations}<br/>
+                    ${labelNames[options.indexOf(colorVar)]}: ${f(weatherData[states.indexOf(d)][colorVar][season])}`)
+                    .style("left", (xPos) + "px")
+                    .style("top", (yPos) + "px")
                     .style("position", "absolute");
             
-                    d3.select(this) // Refers to the hovered circle update border color/width
+                    d3.select(this) // Refers to the hovered state update border color/width
                     .style('stroke', 'black')
                     .style('stroke-width', '4px')
-                    .style("position", "absolute");
+                    .style("position", "relative");
                 })
                 .on("mouseout", function (event, d) { // hide tooltip after mouse over
                     d3.select('#tooltip')
@@ -140,21 +125,28 @@ function updateVis() {
                     .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
                     .style('stroke-width', '1px')
                 })
-                        
+                .transition(t) // transition to new color
+                .style("fill", (d, i) => colorScale(weatherData[i][colorVar][season])) // filter for correct data types and seasons
             },
             
             function(update) { // todo
-
+                return update
+                .transition(t)
+                .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
+                .style("fill", (d, i) => colorScale(weatherData[i][colorVar][season]))
             },
 
             function(exit) { // todo
-
+                return exit
+                .transition(t)
+                .style('opacity', 0)
+                .remove()
             }
        )
 
     // text labels for each state
     svg.selectAll("g.countryLabels text")
-    .data(states)
+    .data(states.filter(d => !exclude.includes(d.properties['postal-code']))) // exclude states whose name is obstructive
     .join("text")
       .attr("fill", "black")
       .attr("transform", d => `translate(${path.centroid(d)})`)
@@ -162,7 +154,35 @@ function updateVis() {
       .attr("dy", "0em")
       .attr("text-anchor", "middle")
       .style("font", "400 12px/1.5 'Source Sans Pro', 'Noto Sans', sans-serif")
-      .text(d => d.properties["postal-code"]);       
+      .text(d => d.properties["postal-code"])
+    // bring up tool tips
+    .on('mouseover', function (event, d) {
+        d3.select('#tooltip')
+        .style("display", 'block')
+        .html( // Change the html content of the <div> directly
+        `<strong>${d.properties.name}</strong><br/>
+        Stations: ${weatherData[states.indexOf(d)].stations}<br/>
+        ${labelNames[options.indexOf(colorVar)]}: ${f(weatherData[states.indexOf(d)][colorVar][season])}`)
+        // update location of the tooltip
+        .style("left", (xPos || event.pageX + 20) + "px")
+        .style("top", (yPos || event.pageY - 28) + "px")
+        .style("position", "absolute");;
+
+        d3.selectAll(".state") // maintain stroke color for the state
+        .filter(s => s == d)
+        .style('stroke', 'black')
+        .style('stroke-width', '4px')
+        .style("position", "absolute")
+    })
+    .on("mouseout", function (event, d) { // hide tooltip after mouse over
+        d3.select('#tooltip')
+        .style('display', 'none')
+
+        d3.selectAll(".state") // reset border color/width for the state
+        .filter(s => s == d)
+        .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
+        .style('stroke-width', '1px')
+    });       
 }
 
 
