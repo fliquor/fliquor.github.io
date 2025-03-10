@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="container"> <!-- Centers content and sets max width -->
-        <h1>Labs 4 & 5: Interactive Visualization with D3.js</h1>
+        <h1>United States Weather Data by Season during 2017</h1>
 
         <div class="controls">
             <button id="Winter" class="btn btn-outline-primary">Winter</button>
@@ -17,7 +17,8 @@
             <button id="Summer" class="btn btn-outline-warning">Summer</button>
             <button id="Fall" class="btn btn-outline-danger">Fall</button>
             
-            X: <select id="colorVariable" class="variable"></select>
+            Weather Data: <select id="colorVariable" class="variable"></select><br>
+            <strong>Selected: Winter</strong>
         </div>
 
 
@@ -31,5 +32,6 @@
     <script src="https://unpkg.com/d3-simple-slider"></script>
     <script src="//d3js.org/topojson.v1.min.js"></script>
     <script src="js/script.js"></script>
+    <script src="js/build_data.js"></script>
 </body>
 </html>
