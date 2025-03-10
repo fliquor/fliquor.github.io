@@ -15,10 +15,10 @@ let mapData, weatherData, states
 let colorScale
 const options = ["TAVG", "SNOW", "PRCP", "WND"]
 const labelNames = ["Average Temperature (F)", "Snowfall (in)", "Percipitation (in)", "Wind Speed (mph)"]
-
+const f = d3.format(".2f")
 // use US projection
 var projection = d3.geoAlbersUsa()
-    .translate([(width / 2.5) - 75, (height / 2.5) +85])
+    .translate([(width / 2.5) - 75, (height / 2.5) + 60])
     .scale(1000)
 
 var path = d3.geoPath()
@@ -52,7 +52,7 @@ async function init() {
 
 function setupSelector() { // set up season buttons and weather data dropdown
    
-    d3.select("#Winter") // update button click functionality
+    d3.select("#Winter") // on button click change the season and update the chart
         .on('click', function(){season = "Winter"; updateVis()});
     d3.select("#Spring")
         .on('click', function(){season = "Spring", updateVis()});
@@ -86,22 +86,71 @@ function setupSelector() { // set up season buttons and weather data dropdown
 
         // update chart
         updateVis();
+        updateAxes();
     })
 
 }
 
 // function to update the map plot
 function updateVis() {
-
+    console.log(states)
     // add state data to the plot
     svg.selectAll(".states")
        .data(states)
-       .enter().append("path")
-       .attr("class", "state")
-       .style("stroke", (colorVar == "SNOW" && season == "Summer") ? "Black" : "White")
-       .style("fill", d => colorScale(d3.mean(weatherData.filter(item => (item.state == d.properties['postal-code']) && 
-                                            (within_season(item.date[1], season))).map(item => item[colorVar]))))
-       .attr("d", path)
+       .join(
+            function(enter){
+                return enter.append("path")
+                .attr("class", "state")
+                .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
+                .style("fill", d => colorScale(d3.mean(weatherData.filter(item => (item.state == d.properties['postal-code']) && 
+                                            (within_season(item.date[1], season))).map(item => item[colorVar])))) // filter for correct data types and seasons
+                .attr("d", path)
+                // bring up tool tips
+                .on('mouseover', function (event, d) {
+                    console.log(d) // See the data point in the console for debugging
+                    d3.select('#tooltip')
+                    // styling the tooltip (shape, color)
+                    .style("display", 'block') 
+                    .style("background-color", "white")
+                    .style("border-radius", "10px")
+                    .style("box-shadow", "4px 4px 10px rgba(0, 0, 0, 0.4)")
+                    .html( // Change the html content of the <div> directly
+                    `<strong>${d.properties.name}</strong><br/>
+                    Stations: ${weatherData.filter(item => (item.state == d.properties['postal-code'])).length}<br/>
+                    ${labelNames[options.indexOf(colorVar)]}: ${f(d3.mean(weatherData.filter(item => (item.state == d.properties['postal-code']) && 
+                                                                (within_season(item.date[1], season))).map(item => item[colorVar])))}`)
+                    // style text + location of the tooltip
+                    .style("font", "400 12px/1.5 'Source Sans Pro', 'Noto Sans', sans-serif")
+                    .style("padding-left", "5px")
+                    .style("padding-right", "5px")
+                    .style("left", (event.pageX + 20) + "px")
+                    .style("top", (event.pageY - 28) + "px")
+                    .style("position", "absolute");
+            
+                    d3.select(this) // Refers to the hovered circle update border color/width
+                    .style('stroke', 'black')
+                    .style('stroke-width', '4px')
+                    .style("position", "absolute");
+                })
+                .on("mouseout", function (event, d) { // hide tooltip after mouse over
+                    d3.select('#tooltip')
+                    .style('display', 'none')
+
+                    d3.select(this) // reset border color/width
+                    .style("stroke", (colorVar == "SNOW" && (season == "Summer" || season == "Fall")) ? "#eeecec" : "White")
+                    .style('stroke-width', '1px')
+                })
+                        
+            },
+            
+            function(update) { // todo
+
+            },
+
+            function(exit) { // todo
+
+            }
+       )
 
     // text labels for each state
     svg.selectAll("g.countryLabels text")
@@ -113,25 +162,60 @@ function updateVis() {
       .attr("dy", "0em")
       .attr("text-anchor", "middle")
       .style("font", "400 12px/1.5 'Source Sans Pro', 'Noto Sans', sans-serif")
-      .text(d => d.properties["postal-code"]);
+      .text(d => d.properties["postal-code"]);       
 }
 
-// check if the given month is within the correct season
-function within_season(month, season) {
-   if ((((month >= 1) && (month <= 2)) || (month == 12)) && (season == "Winter")) { // check if winter
-      return true
-   } else if ((month >= 3) && (month <= 5) && (season == "Spring")) { // check if spring
-      return true
-   } else if ((month >= 6) && (month <= 8) && (season == "Summer")) { // check if summer
-    return true
-   } else if ((month >= 9) && (month <= 11) && (season == "Fall")) { // check if fall
-    return true
 
-   } 
-}
+function updateAxes() { // adds and updates colorbar
+    // remove previous color bar
+    svg.selectAll(".colorbar").remove()
+    svg.selectAll(".axis").remove()
 
-function updateAxes() {
+    const min = colorVar == "TAVG" ? colorScale.domain()[2] : colorScale.domain()[0]
+    const mid = d3.mean(colorScale.domain())
+    const max = colorVar == "TAVG" ? colorScale.domain()[0] : colorScale.domain()[1]
 
+    const defs = svg.append("defs");
+
+    const gradient = defs.append("linearGradient") // create linear gradient
+        .attr("id", "linear-gradient")
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "100%")
+        .attr("y2", "0%")
+        .attr("class", "colorbar");
+
+    // add color values for min, middle, and max of the color bar
+    gradient.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", colorScale(min));
+
+    gradient.append("stop")
+        .attr("offset", "50%")
+        .attr("stop-color", colorScale(mid))
+
+    gradient.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", colorScale(max));
+
+    svg.append("rect") // create the bar
+        .attr("x", width*0.15)
+        .attr("y", height*0.92)
+        .attr("width", 400)
+        .attr("height", 20)
+        .style("fill", "url(#linear-gradient)");
+
+    // create and format axis
+    const axisScale = d3.scaleLinear()
+        .domain([min, max])
+        .range([0, 400]);
+
+    const axisBottom = d3.axisBottom(axisScale);
+    
+    svg.append("g")
+    .attr("transform", `translate(${width*0.15},${height*0.92 + 25})`)
+    .attr("class", "axis")
+    .call(axisBottom);
 }
 
 // returns a new colorScale based on the given data variable
@@ -139,7 +223,7 @@ function updateColorScale(data) {
 
     if (data == "TAVG") { // select color scheme based on what data is being passed  
         return d3.scaleDiverging(d3.interpolateRdYlBu)
-                    .domain([80, 55, 20]) // based on highest summer temps, lowest winter temps, and average between sping and fall temps
+                    .domain([80, 50, 20]) // based on highest summer temps, lowest winter temps, and average between sping and fall temps
                     .clamp(true)
 
     } else if (data == "PRCP") {
@@ -159,5 +243,19 @@ function updateColorScale(data) {
     }
 
 }
+
+// check if the given month is within the correct season
+function within_season(month, season) {
+    if ((((month >= 1) && (month <= 2)) || (month == 12)) && (season == "Winter")) { // check if winter
+       return true
+    } else if ((month >= 3) && (month <= 5) && (season == "Spring")) { // check if spring
+       return true
+    } else if ((month >= 6) && (month <= 8) && (season == "Summer")) { // check if summer
+     return true
+    } else if ((month >= 9) && (month <= 11) && (season == "Fall")) { // check if fall
+     return true
+ 
+    } 
+ }
 
 init()
