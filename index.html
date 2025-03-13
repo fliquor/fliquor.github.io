@@ -35,7 +35,7 @@
     <p>Introduction: <br>
     The data set we chose was the daily weather measurements in the U.S during the year 2016. The content is as the name says. 
     The data consists of measurements of the weather from several weather stations around the US. The subsets of data we chose to focus on were the average temperature, snowfall, precipitation, and wind speed. 
-    We also decided to group the data by season.<br>
+    We also decided to group the data by season.<br><br>
     
     Rationale:<br>
     We were inspired by the zipdecode website and wanted to do something with a similar visual. As such, we did not really have any alternative choices for how we wanted the data to be presented, 
@@ -43,7 +43,7 @@
     hence the visual of the US, of which is divided up into states each with its abbreviated label. To distinguish the values of a given metric, we obviously decided on color and saturation with a colorbar 
     at the bottom to aide the user in understanding what a given color and/or saturation means numerically. The colorbar itself has a scale labeling the values. For average temperature, we went with the 
     obvious red for hot and blue for cold. Snow and precipitation use the same blue scale (as percipitation is commonly associated with the color blue). Lastly, green was used for wind speed, as again, 
-    green felt like a color that is commonly associated with green.<br>
+    green felt like a color that is commonly associated with green.<br><br>
     
     For the most part, there were no alternative approaches aside from how to represent the wind metrics. A potential idea was to represent this data using a vector field, implying arrows with a length and 
     direction, but decided against it for the sake of simplicity and time. We also considered purple and shades of purple for representing snow fall but remained with blue since that was our preexisting 
@@ -54,7 +54,7 @@
     across the entire year would be much too simple to have any sort of significant meaning. To view the data for an arbitrary season, we have color coded buttons with a color we attribute to the respective 
     season. For changing the metrics, we thought a simple drop down menu would suffice. A transition animation was included as an effort to showcase either the gradual or extreme change from one season to another. 
     Lastly, users can hover over a given state to view more detailed information about their chosen metric. The tooltip displays the full name of the state, how many weather stations there are, and the averaged 
-    metric for that specific state for the chosen season.<br>
+    metric for that specific state for the chosen season.<br><br>
     
     Development Process:<br>
     We decided to split our work with each person focusing on one aspect of the visualization. This included the aesthetic components and the technical components. The aesthetic components includes aspects such 
@@ -65,7 +65,7 @@
     We finished by adding the final elements which included the colorbar at the bottom and the text at the top that lets you know which season has been selected. For efficiency reasons, we also decided to create 
     modified version of the original dataset containing only the information necessary for the visualization. This then required us to slightly modified how the data was being processed to adapt to the new, 
     modified dataset. It took about 10 hours over the course of a week to complete all of the major elements of the visualization. The aspect that took the most time was probably setting up the actual map plot. 
-    Besides having to figure out how to do it in the first place, We also needed to familiarize ourselves with formats such as GeoJson and TopoJson which were necessary to create the plot.<br>
+    Besides having to figure out how to do it in the first place, We also needed to familiarize ourselves with formats such as GeoJson and TopoJson which were necessary to create the plot.<br><br>
     
     References: <br>
     Data Source: https://fumeng-yang.github.io/CMSC471/handouts/weather.csv<br>
